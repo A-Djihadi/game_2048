@@ -1,0 +1,129 @@
+/* 2048 NEON – OhDjiGames. Même palette et mêmes polices (auto-hébergées, OFL) que le hub. */
+@font-face { font-family: 'Rajdhani'; font-weight: 600; font-display: swap; src: url('/fonts/rajdhani-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Rajdhani'; font-weight: 700; font-display: swap; src: url('/fonts/rajdhani-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Press Start 2P'; font-weight: 400; font-display: swap; src: url('/fonts/press-start-2p-latin-400-normal.woff2') format('woff2'); }
+
+:root {
+  --bg: #05060a;
+  --fg: #f2f2f2;
+  --muted: rgba(255, 255, 255, .75);
+  --accent: #FFE81F;
+  --cyan: #4bd5ee;
+  --line: rgba(255, 255, 255, .22);
+
+  --board: min(92vw, 62vh, 460px);
+  --gap: calc(var(--board) * .026);
+  --cell: calc((var(--board) - 5 * var(--gap)) / 4);
+  --slide: 110ms;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--fg); }
+body {
+  font-family: 'Rajdhani', system-ui, sans-serif; font-weight: 600; -webkit-font-smoothing: antialiased;
+  /* Ciel étoilé du hub, en version statique */
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 78% 9%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 34% 71%, #cfe9ff 50%, transparent 51%), radial-gradient(1px 1px at 91% 58%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 57% 37%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 6% 86%, #cfe9ff 50%, transparent 51%),
+    radial-gradient(1px 1px at 68% 88%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 45% 6%, #fff 50%, transparent 51%),
+    radial-gradient(ellipse at 50% 55%, rgba(5,6,10,0) 40%, rgba(0,0,0,.75) 100%);
+  background-size: 310px 290px, 270px 330px, 350px 310px, 290px 370px, 330px 250px, 370px 350px, 250px 270px, 390px 230px, 100% 100%;
+  background-attachment: fixed;
+}
+.accent { color: var(--accent); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.app {
+  width: var(--board); margin: 0 auto; min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column; justify-content: center; gap: 14px;
+  padding: max(14px, env(safe-area-inset-top)) 0 max(14px, env(safe-area-inset-bottom));
+}
+
+.top { display: flex; flex-direction: column; gap: 14px; }
+.home {
+  align-self: flex-start; font-family: 'Press Start 2P', monospace; font-size: 9px; letter-spacing: 1px;
+  color: var(--muted); text-decoration: none; padding: 8px 0;
+}
+.home:hover, .home:focus-visible { color: var(--accent); }
+.title { margin: 0; font-family: 'Press Start 2P', monospace; font-weight: 400; font-size: clamp(20px, 6.4vw, 30px); letter-spacing: 2px; }
+
+.bar { display: flex; gap: 8px; align-items: stretch; }
+.stat {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: 8px 10px;
+  border: 1px solid var(--line); background: rgba(255, 255, 255, .04);
+}
+.stat-label { font-size: 12px; letter-spacing: 3px; color: var(--muted); }
+.stat-value { font-family: 'Press Start 2P', monospace; font-size: 13px; color: var(--accent); }
+
+.btn {
+  font-family: 'Press Start 2P', monospace; font-size: 9px; line-height: 1.5; letter-spacing: 1px; text-align: center; text-decoration: none;
+  color: var(--fg); background: rgba(255, 255, 255, .04); border: 1px solid var(--line); padding: 10px 12px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.btn:hover, .btn:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+.btn-accent { background: var(--accent); border-color: var(--accent); color: #05060a; }
+.btn-accent:hover, .btn-accent:focus-visible { background: #fff; border-color: #fff; color: #05060a; }
+.bar .btn { max-width: 38%; }
+
+/* ---------- Grille ---------- */
+.board {
+  position: relative; width: var(--board); height: var(--board); padding: var(--gap);
+  border: 1px solid var(--line); background: rgba(10, 12, 20, .85);
+  box-shadow: 0 0 40px rgba(75, 213, 238, .08);
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.cells { display: grid; grid-template-columns: repeat(4, var(--cell)); gap: var(--gap); }
+.cells i { height: var(--cell); background: rgba(255, 255, 255, .05); }
+.tiles { position: absolute; inset: var(--gap); }
+
+.tile {
+  position: absolute; top: 0; left: 0; width: var(--cell); height: var(--cell);
+  transform: translate(calc(var(--c) * (var(--cell) + var(--gap))), calc(var(--r) * (var(--cell) + var(--gap))));
+  transition: transform var(--slide) ease-in-out;
+}
+.tile-in {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  font-family: 'Press Start 2P', monospace; font-size: calc(var(--cell) * .30);
+  border: 2px solid var(--tc, var(--fg)); color: var(--tc, var(--fg)); background: var(--tb, #10131d);
+  box-shadow: 0 0 14px -2px var(--tc, transparent), inset 0 0 12px -6px var(--tc, transparent);
+}
+.len-3 .tile-in { font-size: calc(var(--cell) * .24); }
+.len-4 .tile-in { font-size: calc(var(--cell) * .19); }
+.len-5 .tile-in { font-size: calc(var(--cell) * .155); }
+.is-new .tile-in { animation: appear 160ms ease-out var(--slide) backwards; }
+.is-merged .tile-in { animation: pop 180ms ease-out var(--slide) backwards; }
+@keyframes appear { from { transform: scale(0); opacity: 0 } to { transform: scale(1); opacity: 1 } }
+@keyframes pop { 0% { transform: scale(1) } 50% { transform: scale(1.18) } 100% { transform: scale(1) } }
+
+/* Du froid (cyan) au chaud (jaune du hub) ; à partir de 128 la tuile est pleine. */
+.t-2    { --tc: #8a93a8; }
+.t-4    { --tc: #c9d2e6; }
+.t-8    { --tc: #4bd5ee; }
+.t-16   { --tc: #46a6ff; }
+.t-32   { --tc: #9b7bff; }
+.t-64   { --tc: #ff5fd2; }
+.t-128  { --tc: #4bd5ee; --tb: #4bd5ee; }
+.t-256  { --tc: #9b7bff; --tb: #9b7bff; }
+.t-512  { --tc: #ff5fd2; --tb: #ff5fd2; }
+.t-1024 { --tc: #ff9f1c; --tb: #ff9f1c; }
+.t-2048, .t-super { --tc: #FFE81F; --tb: #FFE81F; }
+.t-128 .tile-in, .t-256 .tile-in, .t-512 .tile-in, .t-1024 .tile-in, .t-2048 .tile-in, .t-super .tile-in { color: #05060a; }
+
+/* ---------- Fin de partie ---------- */
+.overlay {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  padding: 16px; text-align: center; background: rgba(5, 6, 10, .88); animation: fade 300ms ease-out;
+}
+.overlay[hidden] { display: none; }
+.overlay-title { margin: 0; font-family: 'Press Start 2P', monospace; font-size: clamp(16px, 5.5vw, 24px); color: var(--accent); }
+.overlay-sub { margin: 0; font-size: 18px; letter-spacing: 2px; color: var(--muted); }
+.overlay-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+@keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+
+.hint { margin: 0; text-align: center; font-size: 13px; letter-spacing: 3px; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --slide: 0ms; }
+  .tile-in, .overlay { animation: none !important; }
+}

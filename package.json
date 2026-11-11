@@ -1,0 +1,6 @@
+{
+  "name": "game-2048",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test" }
+}

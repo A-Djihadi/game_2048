@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>2048 NEON – OhDjiGames</title>
+  <meta name="description" content="2048 NEON : glisse, fusionne les tuiles et atteins 2048. Un jeu OhDjiGames.">
+  <meta name="theme-color" content="#05060a">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/press-start-2p-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/game.js"></script>
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <a class="home" href="https://ohdji.dev/" aria-label="Retour au game center ohdji.dev">&lt; OHDJI.DEV</a>
+      <h1 class="title">2048 <span class="accent">NEON</span></h1>
+    </header>
+
+    <div class="bar">
+      <div class="stat"><span class="stat-label">SCORE</span><span class="stat-value" id="score">0</span></div>
+      <div class="stat"><span class="stat-label">RECORD</span><span class="stat-value" id="best">0</span></div>
+      <button class="btn" id="newGame" type="button">NOUVELLE PARTIE</button>
+    </div>
+
+    <div class="board" id="board" role="application" aria-label="Grille de jeu 4 sur 4. Flèches ou glissement pour déplacer les tuiles.">
+      <div class="cells" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <div class="tiles" id="tiles" aria-hidden="true"></div>
+      <div class="overlay" id="overlay" hidden>
+        <p class="overlay-title" id="overlayTitle"></p>
+        <p class="overlay-sub" id="overlaySub"></p>
+        <div class="overlay-actions">
+          <button class="btn" id="keepGoing" type="button">CONTINUER</button>
+          <button class="btn btn-accent" id="retry" type="button">REJOUER</button>
+          <a class="btn" href="https://ohdji.dev/">&lt; GAME CENTER</a>
+        </div>
+      </div>
+    </div>
+
+    <p class="hint">FLÈCHES / ZQSD · OU GLISSE SUR LA GRILLE</p>
+    <p class="sr-only" id="live" aria-live="polite"></p>
+  </main>
+</body>
+</html>
